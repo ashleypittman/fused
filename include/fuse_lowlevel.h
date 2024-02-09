@@ -2218,6 +2218,22 @@ void fuse_session_process_buf(struct fuse_session *se,
  */
 int fuse_session_receive_buf(struct fuse_session *se, struct fuse_buf *buf);
 
+struct fuse_chan *
+fuse_clone_chan(struct fuse_session *se);
+
+void
+fuse_session_process_buf_int(struct fuse_session *se, const struct fuse_buf *buf,
+			     struct fuse_chan *ch);
+
+int
+fuse_session_receive_buf_int(struct fuse_session *se, struct fuse_buf *buf, struct fuse_chan *ch);
+
+void
+fuse_chan_put(struct fuse_chan *ch);
+
+void
+fuse_chan_put(struct fuse_chan *ch);
+
 #ifdef __cplusplus
 }
 #endif

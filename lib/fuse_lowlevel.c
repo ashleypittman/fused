@@ -27,6 +27,8 @@
 #include <errno.h>
 #include <assert.h>
 #include <sys/file.h>
+#include <sys/ioctl.h>
+
 
 #ifndef F_LINUX_SPECIFIC_BASE
 #define F_LINUX_SPECIFIC_BASE       1024
@@ -3300,3 +3302,80 @@ int fuse_session_exited(struct fuse_session *se)
 {
 	return se->exited;
 }
+
+static struct fuse_chan *
+fuse_chan_new(int fd)
+{
+	struct fuse_chan *ch = (struct fuse_chan *)malloc(sizeof(*ch));
+	if (ch == NULL) {
+		fuse_log(FUSE_LOG_ERR, "fuse: failed to allocate channel\n");
+		return NULL;
+	}
+
+	memset(ch, 0, sizeof(*ch));
+	ch->fd  = fd;
+	ch->ctr = 1;
+	pthread_mutex_init(&ch->lock, NULL);
+
+	return ch;
+}
+
+struct fuse_chan *
+fuse_clone_chan(struct fuse_session *se)
+{
+	int               res;
+	int               clonefd;
+	uint32_t          masterfd;
+	struct fuse_chan *newch;
+	const char       *devname = "/dev/fuse";
+
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+	clonefd = open(devname, O_RDWR | O_CLOEXEC);
+	if (clonefd == -1) {
+		fuse_log(FUSE_LOG_ERR, "fuse: failed to open %s: %s\n", devname, strerror(errno));
+		return NULL;
+	}
+	fcntl(clonefd, F_SETFD, FD_CLOEXEC);
+
+	masterfd = se->fd;
+	res      = ioctl(clonefd, FUSE_DEV_IOC_CLONE, &masterfd);
+	if (res == -1) {
+		fuse_log(FUSE_LOG_ERR, "fuse: failed to clone device fd: %s\n", strerror(errno));
+		close(clonefd);
+		return NULL;
+	}
+	newch = fuse_chan_new(clonefd);
+	if (newch == NULL)
+		close(clonefd);
+
+	return newch;
+}
+
+struct fuse_chan *fuse_chan_get(struct fuse_chan *ch)
+{
+       assert(ch->ctr > 0);
+       pthread_mutex_lock(&ch->lock);
+       ch->ctr++;
+       pthread_mutex_unlock(&ch->lock);
+
+       return ch;
+}
+
+void
+fuse_chan_put(struct fuse_chan *ch)
+{
+	if (ch == NULL)
+		return;
+	pthread_mutex_lock(&ch->lock);
+	ch->ctr--;
+	if (!ch->ctr) {
+		pthread_mutex_unlock(&ch->lock);
+		close(ch->fd);
+		pthread_mutex_destroy(&ch->lock);
+		free(ch);
+	} else
+		pthread_mutex_unlock(&ch->lock);
+}
+

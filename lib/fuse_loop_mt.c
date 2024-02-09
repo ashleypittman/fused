@@ -64,47 +64,6 @@ struct fuse_mt {
 	int max_threads;
 };
 
-static struct fuse_chan *fuse_chan_new(int fd)
-{
-	struct fuse_chan *ch = (struct fuse_chan *) malloc(sizeof(*ch));
-	if (ch == NULL) {
-		fuse_log(FUSE_LOG_ERR, "fuse: failed to allocate channel\n");
-		return NULL;
-	}
-
-	memset(ch, 0, sizeof(*ch));
-	ch->fd = fd;
-	ch->ctr = 1;
-	pthread_mutex_init(&ch->lock, NULL);
-
-	return ch;
-}
-
-struct fuse_chan *fuse_chan_get(struct fuse_chan *ch)
-{
-	assert(ch->ctr > 0);
-	pthread_mutex_lock(&ch->lock);
-	ch->ctr++;
-	pthread_mutex_unlock(&ch->lock);
-
-	return ch;
-}
-
-void fuse_chan_put(struct fuse_chan *ch)
-{
-	if (ch == NULL)
-		return;
-	pthread_mutex_lock(&ch->lock);
-	ch->ctr--;
-	if (!ch->ctr) {
-		pthread_mutex_unlock(&ch->lock);
-		close(ch->fd);
-		pthread_mutex_destroy(&ch->lock);
-		free(ch);
-	} else
-		pthread_mutex_unlock(&ch->lock);
-}
-
 static void list_add_worker(struct fuse_worker *w, struct fuse_worker *next)
 {
 	struct fuse_worker *prev = next->prev;
