@@ -252,7 +252,7 @@ static int fuse_loop_start_thread(struct fuse_mt *mt)
 
 	w->ch = NULL;
 	if (mt->clone_fd) {
-		w->ch = fuse_clone_chan(mt);
+		w->ch = fuse_clone_chan(mt->se);
 		if(!w->ch) {
 			/* Don't attempt this again */
 			fuse_log(FUSE_LOG_ERR, "fuse: trying to continue "

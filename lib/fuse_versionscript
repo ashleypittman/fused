@@ -185,6 +185,10 @@ FUSE_3.12 {
 		fuse_parse_cmdline_30;
 		fuse_parse_cmdline_312;
 		fuse_lowlevel_notify_expire_entry;
+		fuse_clone_chan;
+		fuse_session_receive_buf_int;
+		fuse_session_process_buf_int;
+		fuse_chan_put;
 } FUSE_3.4;
 
 # Local Variables:
