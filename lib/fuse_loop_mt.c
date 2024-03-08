@@ -93,7 +93,7 @@ static void *fuse_do_work(void *data)
 		int res;
 
 		pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
-		res = fuse_session_receive_buf_int(mt->se, &w->fbuf, w->ch);
+		res = fuse_session_receive_buf_chan(mt->se, &w->fbuf, w->ch);
 		pthread_setcancelstate(PTHREAD_CANCEL_DISABLE, NULL);
 		if (res == -EINTR)
 			continue;
@@ -129,7 +129,7 @@ static void *fuse_do_work(void *data)
 			fuse_loop_start_thread(mt);
 		pthread_mutex_unlock(&mt->lock);
 
-		fuse_session_process_buf_int(mt->se, &w->fbuf, w->ch);
+		fuse_session_process_buf_chan(mt->se, &w->fbuf, w->ch);
 
 		pthread_mutex_lock(&mt->lock);
 		if (!isforget)
@@ -199,42 +199,6 @@ int fuse_start_thread(pthread_t *thread_id, void *(*func)(void *), void *arg)
 	}
 
 	return 0;
-}
-
-static struct fuse_chan *fuse_clone_chan(struct fuse_mt *mt)
-{
-	int res;
-	int clonefd;
-	uint32_t masterfd;
-	struct fuse_chan *newch;
-	const char *devname = "/dev/fuse";
-
-#ifndef O_CLOEXEC
-#define O_CLOEXEC 0
-#endif
-	clonefd = open(devname, O_RDWR | O_CLOEXEC);
-	if (clonefd == -1) {
-		fuse_log(FUSE_LOG_ERR, "fuse: failed to open %s: %s\n", devname,
-			strerror(errno));
-		return NULL;
-	}
-#ifndef O_CLOEXEC
-	fcntl(clonefd, F_SETFD, FD_CLOEXEC);
-#endif
-
-	masterfd = mt->se->fd;
-	res = ioctl(clonefd, FUSE_DEV_IOC_CLONE, &masterfd);
-	if (res == -1) {
-		fuse_log(FUSE_LOG_ERR, "fuse: failed to clone device fd: %s\n",
-			strerror(errno));
-		close(clonefd);
-		return NULL;
-	}
-	newch = fuse_chan_new(clonefd);
-	if (newch == NULL)
-		close(clonefd);
-
-	return newch;
 }
 
 static int fuse_loop_start_thread(struct fuse_mt *mt)

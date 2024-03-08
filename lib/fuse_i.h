@@ -173,11 +173,6 @@ void cuse_lowlevel_init(fuse_req_t req, fuse_ino_t nodeide, const void *inarg);
 
 int fuse_start_thread(pthread_t *thread_id, void *(*func)(void *), void *arg);
 
-int fuse_session_receive_buf_int(struct fuse_session *se, struct fuse_buf *buf,
-				 struct fuse_chan *ch);
-void fuse_session_process_buf_int(struct fuse_session *se,
-				  const struct fuse_buf *buf, struct fuse_chan *ch);
-
 struct fuse *fuse_new_31(struct fuse_args *args, const struct fuse_operations *op,
 		      size_t op_size, void *private_data);
 int fuse_loop_mt_312(struct fuse *f, struct fuse_loop_config *config);

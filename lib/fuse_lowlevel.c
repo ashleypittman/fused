@@ -2646,10 +2646,10 @@ static int fuse_ll_copy_from_pipe(struct fuse_bufvec *dst,
 void fuse_session_process_buf(struct fuse_session *se,
 			      const struct fuse_buf *buf)
 {
-	fuse_session_process_buf_int(se, buf, NULL);
+	fuse_session_process_buf_chan(se, buf, NULL);
 }
 
-void fuse_session_process_buf_int(struct fuse_session *se,
+void fuse_session_process_buf_chan(struct fuse_session *se,
 				  const struct fuse_buf *buf, struct fuse_chan *ch)
 {
 	const size_t write_header_size = sizeof(struct fuse_in_header) +
@@ -2847,10 +2847,10 @@ static void fuse_ll_pipe_destructor(void *data)
 
 int fuse_session_receive_buf(struct fuse_session *se, struct fuse_buf *buf)
 {
-	return fuse_session_receive_buf_int(se, buf, NULL);
+	return fuse_session_receive_buf_chan(se, buf, NULL);
 }
 
-int fuse_session_receive_buf_int(struct fuse_session *se, struct fuse_buf *buf,
+int fuse_session_receive_buf_chan(struct fuse_session *se, struct fuse_buf *buf,
 				 struct fuse_chan *ch)
 {
 	int err;
